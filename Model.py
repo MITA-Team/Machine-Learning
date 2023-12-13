@@ -21,24 +21,21 @@ Y_train = Y[:training_size]
 Y_test = Y[training_size:]
 
 # Model Klasifikasi ASD
-model1 = tf.keras.models.Sequential(
-    [
+model1 = tf.keras.models.Sequential([
         tf.keras.layers.Dense(128, activation="relu", input_shape=(X_train.shape[1],)),
         tf.keras.layers.Dense(64, activation="relu"),
-        tf.keras.layers.Dense(1, activation="sigmoid"),
-    ]
-)
+        tf.keras.layers.Dense(1, activation="sigmoid")])
+
 model1.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
 history_classification = model1.fit(
-    X_train, Y_train, epochs=50, validation_data=(X_test, Y_test)
+    X_train, Y_train, epochs=10, validation_data=(X_test, Y_test)
 )
-
 
 # Model Rekomendasi
 # Menginisialisasi fitur dan label untuk sistem rekomendasi
 label_encoder = LabelEncoder()
 therapy = label_encoder.fit_transform(data["Therapy"])
-features = data[["Speech", "Sensory", "Physical", "Social", "Total", "ASD_traits"]]
+features = data[["Speech", "Social", "Sensory", "Physical", "Total", "ASD_traits"]]
 
 # Split data training 80% dan testing 20%
 x_train = features[:training_size]
@@ -72,8 +69,8 @@ history_reccomendations = model2.fit(
     validation_data=(x_test, y_test_encoded),
 )
 
-input_A1, input_A2, input_A3, input_A4, input_A5 = 0, 1, 1, 0, 1
-input_A6, input_A7, input_A8, input_A9, input_A10 = 0, 0, 0, 1, 1
+input_A1, input_A2, input_A3, input_A4, input_A5 = 1, 1, 1, 0, 0
+input_A6, input_A7, input_A8, input_A9, input_A10 = 0, 0, 1, 0, 0
 input_speech = input_A1 + input_A5 + input_A3
 input_social = (
     input_A1
@@ -105,7 +102,7 @@ input_total = (
     input_Jaudience,
     input_Family_mem_with_ASD,
     input_Who_completed_the_test,
-) = (2, 0, 1, 1, 0)
+) = (2, 1, 0, 0, 0)
 user_input = pd.DataFrame(
     [
         [
@@ -143,9 +140,9 @@ user_input = pd.DataFrame(
         "A9",
         "A10",
         "Speech",
+        "Social",
         "Sensory",
         "Physical",
-        "Social",
         "Total",
         "Age_Years",
         "Sex",
@@ -160,15 +157,67 @@ predictions = model1.predict(user_input)
 # Mengevaluasi hasil prediksi (berdasarkan threshold 0.5)
 predicted_labels = (predictions > 0.5).astype(int)
 print()
-if predictions > 0.44:
-    print(f"{predictions} Ada kemungkinan ASD")
+if predicted_labels==1:
+    print(f"{predictions} menunjukkan gejala ASD")
 else:
-    print(f"{predictions} Tidak ada kemungkinan ASD")
+    print(f"{predictions} tidak menunukkan gejala ASD")
+
+import matplotlib.pyplot as plt
+import uuid
+def percentage_delay(A):
+    categories = ['speech', 'social', 'sensory', 'physical']
+    a_cat_list = [
+        [1, 1, 1, 0],
+        [0, 1, 0, 0],
+        [1, 1, 0, 0],
+        [0, 1, 0, 0],
+        [1, 1, 0, 0],
+        [0, 1, 1, 0],
+        [0, 1, 0, 1],
+        [0, 0, 1, 1],
+        [0, 1, 0, 1],
+        [0, 1, 1, 0]
+    ]
+
+    total_cases = len(A)
+    category_sums = {category: 0 for category in categories}
+
+    for i in range(total_cases):
+        current_a = A[i]
+
+        if current_a == 1:
+            current_a_cat = a_cat_list[i]
+            for j in range(len(categories)):
+                category_sums[categories[j]] += current_a_cat[j]
+
+    # Calculate the total sum across all categories
+    total_sum = sum(category_sums.values())
+
+    # Calculate the percentage for each category
+    category_percentages = {category: (count / total_sum) * 100 for category, count in category_sums.items()}
+
+    # Create a pie chart
+    labels = list(category_percentages.keys())
+    sizes = list(category_percentages.values())
+
+    plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+    plt.axis('equal')  # Equal aspect ratio ensures that the pie chart is drawn as a circle.
+
+    plt.title('Percentage Delay by Category')
+    nama_gambar = str(uuid.uuid4()) + '.png'
+    # Menyimpan gambar
+    plt.savefig(nama_gambar)
+    print('Nama gambar: ', nama_gambar)
+    plt.show()
+    
+
+A = [input_A1, input_A2, input_A3, input_A4, input_A5, input_A6, input_A7, input_A8, input_A9, input_A10]
+percentage_delay(A)
 
 # Memasukkan prediksi ASD ke dalam frame yang sama. Untuk selanjutnya masuk ke rekomendasi terapi
 user_input["ASD_traits"] = predicted_labels
 user_input = user_input[
-    ["Speech", "Sensory", "Physical", "Social", "Total", "ASD_traits"]
+    ["Speech", "Social", "Sensory", "Physical", "Total", "ASD_traits"]
 ]
 predictions = model2.predict(user_input)
 
@@ -197,9 +246,10 @@ for label, prob in zip(top_indices, top_probabilities):
     original_label = label_asli[label]
     print(f"{original_label}: {prob:.4f}")
 
+
 # Save model
-model1.save("Model.h5")
-model2.save("Model.h5")
+model1.save("Model1.h5")
+model2.save("Model2.h5")
 
 # Konversi kedua model ke dalam format TFLite (.tflite)
 converter1 = tf.lite.TFLiteConverter.from_keras_model(model1)
