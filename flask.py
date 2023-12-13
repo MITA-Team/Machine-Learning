@@ -4,20 +4,24 @@ import numpy as np
 import tensorflow as tf
 from keras.models import Sequential
 from keras.layers import Dense
+import matplotlib.pyplot as plt
+import uuid
 
 app = Flask(__name__)
 
-model = Sequential()
-model.add(Dense(32, input_shape=(11,)))
+#model = Sequential()
+#model.add(Dense(32, input_shape=(11,)))
 # Load models
 model1 = tf.keras.models.load_model("Model1.h5")
 model2 = tf.keras.models.load_model("Model2.h5")
 
 predicted_labels = None
+image_name = None
 
 @app.route('/predict', methods=['POST', 'GET'])
 def predict_asd():
     global predicted_labels
+    global image_name
     data = request.json
     A1 = data["input"]["A1"]
     A2 = data["input"]["A2"]
@@ -48,9 +52,9 @@ def predict_asd():
         "A9": [A9],
         "A10": [A10],
         "Speech": [speech],
+        "Social": [social],
         "Sensory": [sensory],
         "Physical": [physical],
-        "Social": [social],
         "Total": [total],
         "Age_Years": [data["input"]["Age"]],
         "Sex": [data["input"]["Sex"]],
@@ -60,15 +64,74 @@ def predict_asd():
     })
 
     predictions = model1.predict(user_input)
-    predicted_labels = (predictions > 0.4).astype(int)
+    predicted_labels = (predictions > 0.5).astype(int)
+    def predicted_label():
+    # Menampilkan hasil berdasarkan predicted_labels
+        if predicted_labels[0] == 1:
+            result_message = "Memiliki gejala ASD"
+        else:
+            result_message = "Tidak memiliki gejala ASD"
+        
+        return result_message
 
+        
     # Predict therapy
     user_input["ASD_traits"] = predicted_labels
     user_input = user_input[
-        ["Speech", "Sensory", "Physical", "Social", "Total", "ASD_traits"]
+        ["Speech", "Social", "Sensory", "Physical", "Total", "ASD_traits"]
     ]
-    predictions = model2.predict(user_input)
 
+    def percentage_delay(A):
+        categories = ['speech', 'social', 'sensory', 'physical']
+        a_cat_list = [
+            [1, 1, 1, 0],
+            [0, 1, 0, 0],
+            [1, 1, 0, 0],
+            [0, 1, 0, 0],
+            [1, 1, 0, 0],
+            [0, 1, 1, 0],
+            [0, 1, 0, 1],
+            [0, 0, 1, 1],
+            [0, 1, 0, 1],
+            [0, 1, 1, 0]
+        ]
+
+        total_cases = len(A)
+        category_sums = {category: 0 for category in categories}
+
+        for i in range(total_cases):
+            current_a = A[i]
+
+            if current_a == 1:
+                current_a_cat = a_cat_list[i]
+                for j in range(len(categories)):
+                    category_sums[categories[j]] += current_a_cat[j]
+
+        # Calculate the total sum across all categories
+        total_sum = sum(category_sums.values())
+
+        # Calculate the percentage for each category
+        category_percentages = {category: (count / total_sum) * 100 for category, count in category_sums.items()}
+
+        # Create a pie chart
+        labels = list(category_percentages.keys())
+        sizes = list(category_percentages.values())
+
+        plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+        plt.axis('equal')  # Equal aspect ratio ensures that the pie chart is drawn as a circle.
+
+        plt.title('Percentage Delay by Category')
+        global image_name
+        image_name = str(uuid.uuid4()) + '.png'
+        # Menyimpan gambar
+        plt.savefig(image_name)
+        plt.close()  # Menutup plot agar tidak ditampilkan di server
+        return image_name
+
+    A = [A1, A2, A3, A4, A5, A6, A7, A8, A9, A10]
+    percentage_delay(A)
+
+    predictions = model2.predict(user_input)
     # Mengambil 3 hasil prediksi tertinggi
     top_n = 3
     top_indices = np.argsort(predictions[0])[::-1][:top_n]
@@ -90,9 +153,20 @@ def predict_asd():
     }
 
     def top_predictions():
-        return [{"Therapy": label_asli.get(label, f'Unknown {label}'), "Probability": f'{prob:.4f}'} for label, prob in zip(top_indices, top_probabilities)]
+        top_results = []
+        for label, prob in zip(top_indices, top_probabilities):
+            original_label = label_asli.get(label, None)
+            
+            # Jika label terapi adalah "Unknown", tidak menambahkannya ke hasil
+            if original_label is not None:
+                result = {"Therapy": original_label, "Probability": f'{prob:.4f}'}
+                top_results.append(result)
+        
+        return top_results
 
-    return jsonify({"prediction_asd": predicted_labels.tolist(), "top_predictions": top_predictions()})
+        #return [{"Therapy": label_asli.get(label, f'Unknown {label}'), "Probability": f'{prob:.4f}'} for label, prob in zip(top_indices, top_probabilities)]
+
+    return jsonify({"prediction_asd": predicted_label(), 'image_delay': image_name, "top_predictions": top_predictions()})
 
 if __name__ == '__main__':
     app.run(debug=True)
