@@ -117,7 +117,10 @@ def predict_asd():
         labels = list(category_percentages.keys())
         sizes = list(category_percentages.values())
 
-        plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+        #add colors
+        colors = ["#ff9999","#66b3ff","#99ff99","#ffcc99"]
+
+        plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90, colors=colors)
         plt.axis('equal')  # Equal aspect ratio ensures that the pie chart is drawn as a circle.
 
         plt.title('Percentage Delay by Category')
