@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from google.cloud import storage
 import pandas as pd
 import numpy as np
 import tensorflow as tf
@@ -6,17 +7,18 @@ from keras.models import Sequential
 from keras.layers import Dense
 import matplotlib.pyplot as plt
 import uuid
+import os
 
 app = Flask(__name__)
 
-#model = Sequential()
-#model.add(Dense(32, input_shape=(11,)))
-# Load models
 model1 = tf.keras.models.load_model("Model1.h5")
 model2 = tf.keras.models.load_model("Model2.h5")
 
 predicted_labels = None
 image_name = None
+bucket_name = "mita-storage"
+
+storage_client = storage.Client.from_service_account_json('./serviceAccountKey.json')
 
 @app.route('/predict', methods=['POST', 'GET'])
 def predict_asd():
@@ -66,14 +68,12 @@ def predict_asd():
     predictions = model1.predict(user_input)
     predicted_labels = (predictions > 0.5).astype(int)
     def predicted_label():
-    # Menampilkan hasil berdasarkan predicted_labels
         if predicted_labels[0] == 1:
             result_message = "Memiliki gejala ASD"
         else:
             result_message = "Tidak memiliki gejala ASD"
         
         return result_message
-
         
     # Predict therapy
     user_input["ASD_traits"] = predicted_labels
@@ -110,32 +110,38 @@ def predict_asd():
         # Calculate the total sum across all categories
         total_sum = sum(category_sums.values())
 
-        # Calculate the percentage for each category
         category_percentages = {category: (count / total_sum) * 100 for category, count in category_sums.items()}
 
-        # Create a pie chart
         labels = list(category_percentages.keys())
         sizes = list(category_percentages.values())
 
-        #add colors
         colors = ["#ff9999","#66b3ff","#99ff99","#ffcc99"]
 
         plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90, colors=colors)
-        plt.axis('equal')  # Equal aspect ratio ensures that the pie chart is drawn as a circle.
+        plt.axis('equal')  
 
         plt.title('Percentage Delay by Category')
+        
         global image_name
         image_name = str(uuid.uuid4()) + '.png'
-        # Menyimpan gambar
+        
+        # Save image
         plt.savefig(image_name)
-        plt.close()  # Menutup plot agar tidak ditampilkan di server
+        plt.close()
+
+        blob = storage_client.bucket(bucket_name).blob(image_name)
+        blob.upload_from_filename(image_name)
+
+        os.remove(image_name)
+
         return image_name
 
     A = [A1, A2, A3, A4, A5, A6, A7, A8, A9, A10]
     percentage_delay(A)
 
     predictions = model2.predict(user_input)
-    # Mengambil 3 hasil prediksi tertinggi
+
+    # Top 3 predictions
     top_n = 3
     top_indices = np.argsort(predictions[0])[::-1][:top_n]
     top_probabilities = predictions[0][top_indices]
@@ -160,16 +166,17 @@ def predict_asd():
         for label, prob in zip(top_indices, top_probabilities):
             original_label = label_asli.get(label, None)
             
-            # Jika label terapi adalah "Unknown", tidak menambahkannya ke hasil
             if original_label is not None:
                 result = {"Therapy": original_label, "Probability": f'{prob:.4f}'}
                 top_results.append(result)
         
         return top_results
 
-        #return [{"Therapy": label_asli.get(label, f'Unknown {label}'), "Probability": f'{prob:.4f}'} for label, prob in zip(top_indices, top_probabilities)]
-
-    return jsonify({"prediction_asd": predicted_label(), 'image_delay': image_name, "top_predictions": top_predictions()})
+    return jsonify({
+        "prediction_asd": predicted_label(), 
+        'image': f'https://storage.googleapis.com/{bucket_name}/{image_name}',
+        "top_predictions": top_predictions()
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)
