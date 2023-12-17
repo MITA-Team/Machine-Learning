@@ -1,4 +1,4 @@
-flask=3.0.0
+flask==3.0.0
 pandas==2.1.4
 tensorflow==2.15.0.post1
 matplotlib==3.8.2
