@@ -16,7 +16,7 @@ model2 = tf.keras.models.load_model("Model2.h5")
 
 predicted_labels = None
 image_name = None
-bucket_name = "mita-storage"
+bucket_name = "mita-bucket-storage"
 
 storage_client = storage.Client.from_service_account_json('./serviceAccountKey.json')
 
