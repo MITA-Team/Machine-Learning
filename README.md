@@ -18,6 +18,13 @@ python3 -m pip install -r requirements.txt
 
 _Kalo gabisa, install manual aja. pip install <nama_package>_
 
+## Buat service account key
+
+```
+sudo nano serviceAccountKey.json
+```
+_Service account key ada di Repo service account, namanya bucket service account_
+
 ## Build ML Model
 
 ### Using ```model.py``` to create model
