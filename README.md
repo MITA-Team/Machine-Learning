@@ -7,8 +7,16 @@
 Before that, you must install pip.
 
 ```
+sudo apt install pip
+```
+
+Install requirements
+
+```
 python3 -m pip install -r requirements.txt
 ```
+
+_Kalo gabisa, install manual aja. pip install <nama_package>_
 
 ## Build ML Model
 
