@@ -12,8 +12,8 @@ data = pd.read_csv(url)
 X = data.drop(["Therapy", "ASD_traits", "Percentage", "Case_No"], axis=1)
 Y = data["ASD_traits"]
 
-# Split data dengan Training data 80% dan validation data 20%
-training_size = int(len(data) * 0.8)
+# Split data dengan Training data 90% dan validation data 10%
+training_size = int(len(data) * 0.9)
 
 X_train = X[:training_size]
 X_test = X[training_size:]
