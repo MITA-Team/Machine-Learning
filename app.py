@@ -1,3 +1,4 @@
+from gevent.pywsgi import WSGIServer
 from flask import Flask, request, jsonify
 from google.cloud import storage
 import pandas as pd
@@ -132,7 +133,11 @@ def predict_asd():
         blob = storage_client.bucket(bucket_name).blob(image_name)
         blob.upload_from_filename(image_name)
 
-        os.remove(image_name)
+        if os.path.exists(image_name):
+            os.remove(image_name)
+            print(f"File {image_name} removed successfully.")
+        else:
+            print(f"File {image_name} not found.")
 
         return image_name
 
@@ -179,4 +184,5 @@ def predict_asd():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    http_server = WSGIServer(('0.0.0.0', 5000), app)
+    http_server.serve_forever()
