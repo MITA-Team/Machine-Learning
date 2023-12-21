@@ -23,7 +23,9 @@ Y_test = Y[training_size:]
 
 # Model Klasifikasi ASD
 model1 = tf.keras.models.Sequential([
-    tf.keras.layers.Dense(128, activation='relu', input_shape=(X_train.shape[1],)),
+    tf.keras.layers.Dense(512, activation='relu', input_shape=(X_train.shape[1],)),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dense(128, activation='relu'),
     tf.keras.layers.Dense(64, activation='relu'),
     tf.keras.layers.Dropout(0.2),
     tf.keras.layers.Dense(1, activation='linear')
@@ -53,12 +55,12 @@ y_train_encoded = tf.keras.utils.to_categorical(y_train, num_classes=12)
 y_test_encoded = tf.keras.utils.to_categorical(y_test, num_classes=12)
 
 # Model Rekomendasi
-model2 = tf.keras.Sequential(
-    [tf.keras.layers.Dense(64, input_shape=(6,), activation="relu"),
-        #tf.keras.layers.Dense(64, activation="relu"),
-        tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.Dense(12, activation="softmax")]
-)
+model2 = tf.keras.Sequential([
+    tf.keras.layers.Dense(128, input_shape=(6,), activation="relu"),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dense(64, activation='relu'),
+    tf.keras.layers.Dropout(0.2),
+    tf.keras.layers.Dense(12, activation="softmax")])
 model2.compile(optimizer='Adam', loss="categorical_crossentropy", metrics=["accuracy"])
 history_reccomendations = model2.fit(
     x_train,
