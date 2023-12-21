@@ -166,15 +166,52 @@ def predict_asd():
         12: "Physical 3",
     }
 
+    label_alias = {
+        1: "Tiru Suara Fauna",
+        2: "Abeceria Anak",
+        3: "Wicara Terapi",
+        4: "SociPlay Therapy",
+        5: "InterActElevate Therapy",
+        6: "SosioLeap Therapy",
+        7: "Sentuhan Ajaib",
+        8: "Colorful Vulcano",
+        9: "Sensori Kreatif",
+        10: "Rhythmika Anak",
+        11: "Nature Play",
+        12: "JoyMotion",
+    }
+
+    label_id = {
+        1: "PBKRgRWeaQGsjy4GrL3k",
+        2: "G1cqkLvsfPdLM2aMCMP2",
+        3: "SkP4A3ut6sfXGr9g75Fy",
+        4: "13Br2YYTzJp23N0xrShf",
+        5: "nA6DXRvnewTpDES9GFvC",
+        6: "mcibDwQgzb0wQ1rLzLcC",
+        7: "6rVkIhV6VcEh5UwpBt0W",
+        8: "yNkzV0XJ8y7ZIC4XSbsl",
+        9: "qageqyakpcbDZrqKaJ5R",
+        10: "qiQGiKfLdqpi6Qj2T49N",
+        11: "kZEy7xqnRiOfE09aoUkc",
+        12: "O5Pu6ue5Qf0lsqVfUM4L",
+    }
+
     def top_predictions():
         top_results = []
         for label, prob in zip(top_indices, top_probabilities):
             original_label = label_asli.get(label, None)
-            
-            if original_label is not None:
-                result = {"Therapy": original_label, "Probability": f'{prob:.4f}'}
+            alias = label_alias.get(label, None)
+            id_label = label_id.get(label, None)
+
+            if original_label is not None and alias is not None and id_label is not None:
+                result = {
+                    "Probability": f'{prob:.4f}',
+                    "Therapy": original_label,
+                    "Id": id_label,
+                    "Alias": alias,
+                }
                 top_results.append(result)
-        
+
         return top_results
 
     return jsonify({
@@ -185,4 +222,5 @@ def predict_asd():
 
 if __name__ == '__main__':
     http_server = WSGIServer(('0.0.0.0', 5000), app)
+    print("Server is Ready on Port 5000")
     http_server.serve_forever()
