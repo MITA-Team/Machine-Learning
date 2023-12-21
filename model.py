@@ -31,7 +31,7 @@ model1 = tf.keras.models.Sequential([
     tf.keras.layers.Dense(1, activation='linear')
 ])
 model1.compile(optimizer='Adam', loss='mean_squared_error', metrics=['accuracy'])
-history_classification=model1.fit(X_train, Y_train, epochs=10, batch_size=50, validation_data=(X_test, Y_test))
+history_classification=model1.fit(X_train, Y_train, epochs=50, batch_size=50, validation_data=(X_test, Y_test))
 
 
 # Model Rekomendasi
